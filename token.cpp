@@ -29,6 +29,37 @@ const int MAXPHILOS = 5;
 int token = 0;
 bool chopstickPosition[CHOPSTICKS];
 
+
+/// \brief Class task
+/// \details Implements the following functions
+class Task
+{
+private:
+	int id;
+	int eatingTime;
+	int thinkingTime;
+public:
+	Task();
+	void set_time();
+	void get_eatingTime();
+	void get_thinkingTime();
+};
+
+Task::Task()
+{
+	eatingTime = 0;
+	thinkingTime = 0;
+}
+
+void Task::set_time()
+{
+	eatingTime
+}
+int Task::get_eatingTime() {}
+int Task::get_thinkingTime() {}
+
+
+
 /// \brief Class Process
 /// \details Implements the following functions:
 /// Process() & run()
@@ -37,19 +68,32 @@ class Process
 private:
 	int id;
 	unsigned int sid; /// seed for srand
+	Task task;
 public:
+	Process(int, Task*);
 	void run();
 };
 
 /// \brief Constructor
-void Process::Process(int identifer)
+Process::Process(int identifer, Task* task)
 {
 	id = identifer;
 }
 
 void Process::run() 
 {
+	task->set_time();
+	bool busy = true;
+	while (busy)
+	{
+		sleep(task->get_thinkingTime()); /// start thinking
+		if (token == id)
+		{
+			
+			busy = false;
 
+		}
+	}
 }
 
 /// \brief Run Thread
@@ -61,36 +105,36 @@ void* callRun(void* process) {
 
 int main(int argc, const char* argv[]) {
 	int err;
+	Task* task = new Task();
 
-	pthread_t tid[MAXPHILOS];
+	pthread_t philos[MAXPHILOS];
 
-	//create all threads
+	//Create and launch all threads
 	for (int i = 0; i < MAXPHILOS; i++)
 	{
+		Process* process_exec = new Process(i, task);
 
-
-		Process* process_exec = new Process(i);
-
-		err = pthread_create(&tid[i], NULL, callRun, process_exec);
+		err = pthread_create(&philos[i], NULL, callRun, process_exec);
 		if (err)
 		{
-			printf("Error: Failed to create processes\n");
+			printf("Error: failed to seat all philosophers\n");
 			exit(1);
 		}
 
 	}
 
 	pthread_mutex_lock(&Out);
-	cout << "All processes are active." << endl;
+	cout << "All philosophers are seated" << endl;
 	pthread_mutex_unlock(&Out);
 
 	//Wait for threads to complete
 	for (int i = 0; i < MAXPHILOS; i++)
 	{
-		pthread_join(tid[i], NULL);
+		pthread_join(philos[i], NULL);
 	}
 
-	cout << "All processes have completed." << endl;
+	cout << "All philiosphers are done." << endl;
 
 	return 0;
 }
+
