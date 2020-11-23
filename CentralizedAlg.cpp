@@ -1,4 +1,4 @@
-//Project5.cpp
+//CentralizedAlg.cpp
 //Centralized algorithm
 //Don Lieu
 //ei9700fv
