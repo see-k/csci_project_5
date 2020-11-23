@@ -153,7 +153,7 @@ int main (int argc, const char * argv[]) //This was changed
 	 pthread_t tidArray[MAXPROCESSES];
 	 Process *processArray[MAXPROCESSES];
 	 
-	 for(int i = 0; i < CHOPSTICKS; i++)
+	for(int i = 0; i < CHOPSTICKS; i++)
 	{
 		chopstickPosition[i] = true;
 	}

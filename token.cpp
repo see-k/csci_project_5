@@ -28,7 +28,9 @@ using namespace std;
 const int MAXPHILOS = 5;
 int token = 0;
 bool chopstickPosition[CHOPSTICKS];
+bool seat[CHOPSTICKS];
 
+pthread_mutex_t Out = PTHREAD_MUTEX_INITIALIZER;
 
 /// \brief Class task
 /// \details Implements the following functions
@@ -41,8 +43,8 @@ private:
 public:
 	Task();
 	void set_time();
-	void get_eatingTime();
-	void get_thinkingTime();
+	int get_eatingTime();
+	int get_thinkingTime();
 };
 
 Task::Task()
@@ -53,10 +55,17 @@ Task::Task()
 
 void Task::set_time()
 {
-	eatingTime
+	eatingTime = rand()% 10 + 2;
+	thinkingTime = rand()%10 + 2;
 }
-int Task::get_eatingTime() {}
-int Task::get_thinkingTime() {}
+int Task::get_eatingTime() 
+{
+	return eatingTime;
+}
+int Task::get_thinkingTime() 
+{
+	return thinkingTime;
+}
 
 
 
@@ -68,30 +77,124 @@ class Process
 private:
 	int id;
 	unsigned int sid; /// seed for srand
-	Task task;
+	Task* task;
 public:
 	Process(int, Task*);
 	void run();
 };
 
 /// \brief Constructor
-Process::Process(int identifer, Task* task)
+Process::Process(int identifer, Task* curTask)
 {
 	id = identifer;
+	task = curTask;
+
 }
 
 void Process::run() 
 {
 	task->set_time();
+	int philosThinking = task->get_thinkingTime();
+	int philosEating = task->get_eatingTime();
 	bool busy = true;
+	bool right = false;
+	bool left = false;
 	while (busy)
 	{
-		sleep(task->get_thinkingTime()); /// start thinking
+		
+		
+
+		pthread_mutex_lock(&Out);
+		cout << "Philospher " << id << " was thinking for " <<philosThinking<<"ms"<< endl;
+		pthread_mutex_unlock(&Out);
+
+		sleep(philosThinking); /// start thinking
+
+
 		if (token == id)
 		{
-			
-			busy = false;
+			cout << "Philospher " << id << " has the token " << endl;	
 
+			/// check to see if both chopstick are available
+			//else if ((chopstickPosition[id] == true) && (chopstickPosition[(id + 1) % 5] == true))
+			if ((left) && (right))
+			{
+				chopstickPosition[id] = false;
+				chopstickPosition[(id + 1) % 5] = false;
+
+				cout << "Philospher " << id << " grabbed left and right chopsticks." << endl;
+
+				/// start eating
+				pthread_mutex_lock(&Out);
+				cout << "Philospher " << id << " is now eating." << endl;
+				sleep(philosEating); 
+				cout << "Philospher " << id << " ate for "<<philosEating<<"ms" << endl;
+				pthread_mutex_unlock(&Out);
+
+				///  release chopsticks
+				chopstickPosition[id] = true;
+				chopstickPosition[(id + 1) % 5] = true;
+				cout << "Philospher " << id << " dropped all chopsticks." << endl;
+
+				seat[id] = false;
+				busy = false;
+				
+			}
+
+			else
+			{
+				if (chopstickPosition[(id + 1) % 5] == false && (right))
+				{
+					right = false;
+					chopstickPosition[(id + 1) % 5] = true; ///  return chopstick to neighbour
+					cout << "Philospher " << id << " dropped right chopstick." << endl;
+				}
+
+				if (chopstickPosition[(id)] == false && (left))
+				{
+					left = false;
+					chopstickPosition[id] = true; ///  drop chopstick 
+					cout << "Philospher " << id << " dropped left chopstick" << endl;
+				}
+			}
+
+			pthread_mutex_lock(&Out);
+			token = (token > 3) ? 0 : token+1; /// set token 
+			pthread_mutex_unlock(&Out);
+			while ((seat[token] == false) && (token < 5))
+			{
+				pthread_mutex_lock(&Out);
+				cout << "Philospher " << id << " left!" << endl;
+				token++;
+				pthread_mutex_unlock(&Out);
+			}
+
+			if (token == 5)
+				token = 0;
+
+			cout << "Philospher " << id << " gave the token to philospher " << token << endl;
+			
+		}
+
+		else 
+		{
+			if (chopstickPosition[id] == true)
+			{
+				pthread_mutex_lock(&Out);
+				chopstickPosition[id] = false; ///  grab personal chopstick
+				left = true;
+				cout << "Philospher " << id << " grabbed right chopstick!" << endl;
+				pthread_mutex_unlock(&Out);
+			}
+
+			else if (chopstickPosition[(id + 1) % 5] == true)
+			{
+				pthread_mutex_lock(&Out);
+				chopstickPosition[id] = false; ///  grab neighbours chopstick
+				right = true;
+				cout << "Philospher " << id << " grabbed left chopstick!" << endl;
+				pthread_mutex_unlock(&Out);
+			}
 		}
 	}
 }
@@ -106,8 +209,14 @@ void* callRun(void* process) {
 int main(int argc, const char* argv[]) {
 	int err;
 	Task* task = new Task();
-
 	pthread_t philos[MAXPHILOS];
+
+	/// Give every philospher a chopstick
+	for (int i = 0; i < CHOPSTICKS; i++)
+	{
+		seat[i] = true;
+		chopstickPosition[i] = true;
+	}
 
 	//Create and launch all threads
 	for (int i = 0; i < MAXPHILOS; i++)
