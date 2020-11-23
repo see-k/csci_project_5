@@ -4,6 +4,8 @@
 //ei9700fv
 //edited by Zeph Johnson
 
+//Still doesn't utilize sockets, only uses threads and global variables to simulate mutual exclusion.
+
 #include <iostream>
 #include <string>
 #include <mutex>
@@ -13,14 +15,14 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
-//#define CHOPSTICKS 5   //Zeph: redundant constant, MAXDEGREEMP+1 is identical
+#define CHOPSTICKS 5   //Zeph: redundant constant, CHOPSTICKS is identical
 
 //using namespace std;
 
 //const int TOTALMEM = 100;
-const int MAXDEGREEMP = 4; //Zeph: this probably needs to be sent through the process creation
+//const int MAXDEGREEMP = 4; //Zeph: this probably needs to be sent through the process creation
 //Zeph: these need to be simulated with sockets:
-bool chopstick[MAXDEGREEMP+1]; //true if available for use, false if reserved
+bool chopstick[CHOPSTICKS]; //true if available for use, false if reserved
 pthread_mutex_t Out = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t Stick = PTHREAD_MUTEX_INITIALIZER;
 
@@ -43,7 +45,7 @@ class Scheduler
 		//int id;
 		//int totMem;
 		//int freeMem;
-		//Memory memory[MAXDEGREEMP+1];
+		//Memory memory[CHOPSTICKS];
 		int next;
 	public:
 		Scheduler ();
@@ -64,7 +66,7 @@ Scheduler::Scheduler ()
 {
     totMem= totMem;
     freeMem = totMem;
-    for (int i = 0; i < MAXDEGREEMP+1; i++)
+    for (int i = 0; i < CHOPSTICKS; i++)
     {
         memory[i].id = 0; memory[i].size = 0;
     }
@@ -106,7 +108,7 @@ void Process::run () //This was changed
 	//Zeph: implemented mutual exclusion, cleaned up the next few lines using % instead of if statements.
 	//While either nearby chopstick isn't available, sleep:
 	pthread_mutex_lock (&Stick); //mutual exclusion for checking/changing chopsticks
-	while ( (chopstick[(id)] == false) || (chopstick[(id+1) % (MAXDEGREEMP+1)] == false) )
+	while ( (chopstick[(id)] == false) || (chopstick[(id+1) % (CHOPSTICKS)] == false) )
     {
         pthread_mutex_unlock (&Stick); //unlock while sleeping
         sleep(1);
@@ -115,18 +117,18 @@ void Process::run () //This was changed
 	
 	//reserve chopsticks and eat:
 	chopstick[id] = false;
-	chopstick[(id + 1) % (MAXDEGREEMP+1)] = false;
+	chopstick[(id + 1) % (CHOPSTICKS)] = false;
 	pthread_mutex_unlock (&Stick);
-	sprintf (rstr, "Process %d eating with chopsticks %d and %d...\n", id, id, ((id+1) % (MAXDEGREEMP+1)));
+	sprintf (rstr, "Process %d eating with chopsticks %d and %d...\n", id, id, ((id+1) % (CHOPSTICKS)));
 	println ( rstr );
 	sleep(eatingTime); //simulate eating
 	
 	//return chopsticks:
 	pthread_mutex_lock (&Stick);
     chopstick[id] = true;
-    chopstick[(id + 1) % (MAXDEGREEMP+1)] = true;
+    chopstick[(id + 1) % (CHOPSTICKS)] = true;
 	pthread_mutex_unlock (&Stick);
-    sprintf (rstr, "Process %d finished eating and returned chopsticks %d and %d\n", id, id, ((id+1) % (MAXDEGREEMP+1)));
+    sprintf (rstr, "Process %d finished eating and returned chopsticks %d and %d\n", id, id, ((id+1) % (CHOPSTICKS)));
 	println ( rstr );
 }
  
@@ -139,17 +141,17 @@ int main (int argc, const char * argv[]) //This was changed
 {
 	int err;
 	char rstr[100];
-	pthread_t tidArray[MAXDEGREEMP+1];
-	Process *processArray[MAXDEGREEMP+1];
+	pthread_t tidArray[CHOPSTICKS];
+	Process *processArray[CHOPSTICKS];
 	
-	for(int i = 0; i < MAXDEGREEMP+1; i++)
+	for(int i = 0; i < CHOPSTICKS; i++)
 	{
 		chopstick[i] = true;
 	}
 
 	
 	Scheduler* schd = new Scheduler (); //TOTALMEM);
-	for(int i = 0; i < MAXDEGREEMP+1; i++)
+	for(int i = 0; i < CHOPSTICKS; i++)
 	{
 		processArray[i] = new Process(i, schd);
 		err = pthread_create(&tidArray[i], NULL, callRun, processArray[i]);
@@ -164,7 +166,7 @@ int main (int argc, const char * argv[]) //This was changed
 	sprintf (rstr, "All processes are active.\n");
 	println (rstr);
     
-	for(int i = 0; i < MAXDEGREEMP+1; i++)
+	for(int i = 0; i < CHOPSTICKS; i++)
 	{
 		pthread_join(tidArray[i], NULL);
 	}
