@@ -15,13 +15,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
-#define CHOPSTICKS 5   //Zeph: redundant constant, CHOPSTICKS is identical
-
-//using namespace std;
-
-//const int TOTALMEM = 100;
-//const int MAXDEGREEMP = 4; //Zeph: this probably needs to be sent through the process creation
-//Zeph: these need to be simulated with sockets:
+#define CHOPSTICKS 5  
+ 
 bool chopstick[CHOPSTICKS]; //true if available for use, false if reserved
 pthread_mutex_t Out = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t Stick = PTHREAD_MUTEX_INITIALIZER;
@@ -33,45 +28,19 @@ void println (char *s)
 	pthread_mutex_unlock (&Out);
 }
 
-/*struct Memory
-{
-	 int id;
-	 int size;
-};*/
 
 class Scheduler
 {//Zeph: useless class that might be useful for the token ring alg?
 	private:
-		//int id;
-		//int totMem;
-		//int freeMem;
-		//Memory memory[CHOPSTICKS];
 		int next;
 	public:
 		Scheduler ();
-		//Scheduler (int);
-		//void displayProcesses ();
-		//void getMemory (int id, int need);
-		//void returnMemory (int id, int need);
 };
 
 Scheduler::Scheduler ()
 {
-    //totMem = 0;
-    //freeMem = 0;
 	next = 0;
 }
-
-/*Scheduler::Scheduler (int totMem)
-{
-    totMem= totMem;
-    freeMem = totMem;
-    for (int i = 0; i < CHOPSTICKS; i++)
-    {
-        memory[i].id = 0; memory[i].size = 0;
-    }
-    next = 0;
-}*/
 
 class Process 
 {
@@ -95,14 +64,12 @@ Process::Process (int identifier, Scheduler* schd)
 	thinkingTime = rand() % 5;
 }
 
-void Process::run () //This was changed
+void Process::run () 
 {
-	//bool chopstick1, chopstick2;
 	char rstr[100];
 	
 	sprintf (rstr, "Process %d thinking...\n", id);
-	println ( rstr );
-	//cout << "Process " << id << " thinking..." << endl;	
+	println ( rstr );	
 	sleep(thinkingTime);
 	
 	//Zeph: implemented mutual exclusion, cleaned up the next few lines using % instead of if statements.
@@ -137,7 +104,7 @@ void *callRun (void* process)
  	((Process *)process) -> run();
 }
 
-int main (int argc, const char * argv[]) //This was changed
+int main (int argc, const char * argv[])
 {
 	int err;
 	char rstr[100];
@@ -150,7 +117,7 @@ int main (int argc, const char * argv[]) //This was changed
 	}
 
 	
-	Scheduler* schd = new Scheduler (); //TOTALMEM);
+	Scheduler* schd = new Scheduler (); 
 	for(int i = 0; i < CHOPSTICKS; i++)
 	{
 		processArray[i] = new Process(i, schd);
