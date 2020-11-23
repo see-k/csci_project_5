@@ -1,10 +1,10 @@
-all: Project5 run
+all: CentralizedAlg run
 
-Project5: Project5.cpp
-	g++ -std=gnu++11 -pthread -o Project5 Project5.cpp
+Project5: CentralizedAlg.cpp
+	g++ -std=gnu++11 -pthread -o CentralizedAlg CentralizedAlg.cpp
 
-run: Project5
-	./Project5
+run: CentralizedAlg
+	./CentralizedAlg
 
 clean:
-	-rm Project5
+	-rm CentralizedAlg
